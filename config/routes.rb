@@ -1,4 +1,5 @@
 RailsLogViewer::Engine.routes.draw do
-  get 'logs/stream', to: 'logs#stream'
-  resources :logs, only: [:index, :show]
+  root to: 'logs#index'
+  get 'query', to: 'logs#query', as: :query
+  get 'stream', to: 'logs#stream', as: :stream
 end

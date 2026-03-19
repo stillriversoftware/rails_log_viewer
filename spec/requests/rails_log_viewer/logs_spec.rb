@@ -26,7 +26,7 @@ RSpec.describe 'RailsLogViewer::Logs', type: :request do
         c.authenticate_with = ->(_controller) { false }
       end
 
-      get '/log_viewer/logs'
+      get '/log_viewer/'
 
       expect(response).to have_http_status(:forbidden)
       body = JSON.parse(response.body)
@@ -35,106 +35,111 @@ RSpec.describe 'RailsLogViewer::Logs', type: :request do
 
     it 'raises ConfigurationError when authenticate_with is nil' do
       expect {
-        get '/log_viewer/logs'
+        get '/log_viewer/'
       }.to raise_error(RailsLogViewer::ConfigurationError, /authenticate_with/)
     end
 
     it 'allows access when authenticate_with returns truthy' do
       configure_local!
 
-      get '/log_viewer/logs'
+      get '/log_viewer/'
 
       expect(response).to have_http_status(:ok)
     end
   end
 
-  describe 'GET /log_viewer/logs (index)' do
-    it 'returns available sources as JSON' do
+  describe 'GET /log_viewer/ (index)' do
+    it 'returns the HTML log viewer interface' do
       configure_local!
 
-      get '/log_viewer/logs', headers: { 'Accept' => 'application/json' }
-
-      expect(response).to have_http_status(:ok)
-      body = JSON.parse(response.body)
-      expect(body['sources']).to eq(['local'])
-    end
-
-    it 'returns HTML when requested without JSON accept header' do
-      configure_local!
-
-      get '/log_viewer/logs'
+      get '/log_viewer/'
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('id="rlv-app"')
       expect(response.body).to include('id="rlv-output"')
-    end
-
-    it 'includes streams for cloudwatch source' do
-      authenticate!
-      RailsLogViewer.configure do |c|
-        c.source = :cloudwatch
-        c.aws_log_group = '/app/production'
-        c.aws_region = 'us-east-1'
-      end
-
-      stub_client = Aws::CloudWatchLogs::Client.new(stub_responses: true)
-      stub_client.stub_responses(:describe_log_streams, {
-        log_streams: [
-          { log_stream_name: 'web/host-1', last_event_timestamp: 1000 }
-        ]
-      })
-      allow(Aws::CloudWatchLogs::Client).to receive(:new).and_return(stub_client)
-
-      get '/log_viewer/logs', headers: { 'Accept' => 'application/json' }
-
-      expect(response).to have_http_status(:ok)
-      body = JSON.parse(response.body)
-      expect(body['sources']).to eq(['cloudwatch'])
-      expect(body['streams']).to eq(['web/host-1'])
+      expect(response.body).to include('id="rlv-time-range"')
+      expect(response.body).to include('rlv-sev-btn')
     end
   end
 
-  describe 'GET /log_viewer/logs/:id (show)' do
+  describe 'GET /log_viewer/query (query)' do
     before { configure_local! }
 
-    it 'returns paginated log lines as JSON' do
-      get '/log_viewer/logs/local', params: { source: 'local', page: 0 }
+    it 'returns log lines as JSON' do
+      get '/log_viewer/query', params: { limit: 5 }
 
       expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
       expect(body['lines'].length).to eq(5)
-      expect(body['pagination']['page']).to eq(0)
-      expect(body['pagination']['has_more']).to be true
-      expect(body['source']).to eq('local')
+      expect(body['cursors']).to have_key('older')
+      expect(body['cursors']).to have_key('newer')
     end
 
-    it 'supports page-based pagination' do
-      get '/log_viewer/logs/local', params: { source: 'local', page: 1 }
+    it 'returns structured line objects with message, timestamp, severity' do
+      get '/log_viewer/query', params: { limit: 1 }
 
-      expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
-      expect(body['lines'].length).to eq(5)
-      expect(body['pagination']['page']).to eq(1)
+      line = body['lines'].first
+      expect(line).to have_key('message')
+      expect(line).to have_key('timestamp')
+      expect(line).to have_key('severity')
     end
 
-    it 'returns search results when query is provided' do
-      get '/log_viewer/logs/local', params: { source: 'local', query: 'ERROR' }
+    it 'supports time range filtering' do
+      get '/log_viewer/query', params: {
+        start_time: '2026-03-19T10:00:03',
+        end_time: '2026-03-19T10:00:04',
+        limit: 100
+      }
 
-      expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
+      expect(body['lines']).not_to be_empty
       body['lines'].each do |line|
-        expect(line).to include('ERROR')
+        ts = Time.parse(line['timestamp'])
+        expect(ts).to be >= Time.new(2026, 3, 19, 10, 0, 3)
+        expect(ts).to be <= Time.new(2026, 3, 19, 10, 0, 4)
       end
+    end
+
+    it 'supports severity filtering' do
+      get '/log_viewer/query', params: { severity: 'ERROR', limit: 100 }
+
+      body = JSON.parse(response.body)
+      expect(body['lines']).not_to be_empty
+      body['lines'].each do |line|
+        expect(line['severity']).to eq('ERROR')
+      end
+    end
+
+    it 'supports search' do
+      get '/log_viewer/query', params: { q: 'ConnectionBad', limit: 100 }
+
+      body = JSON.parse(response.body)
+      expect(body['lines'].length).to eq(1)
+      expect(body['lines'].first['message']).to include('ConnectionBad')
+    end
+
+    it 'supports cursor-based pagination' do
+      get '/log_viewer/query', params: { limit: 5 }
+      first_body = JSON.parse(response.body)
+      cursor = first_body['cursors']['older']
+
+      get '/log_viewer/query', params: { limit: 5, cursor: cursor, direction: 'older' }
+      second_body = JSON.parse(response.body)
+
+      first_messages = first_body['lines'].map { |l| l['message'] }
+      second_messages = second_body['lines'].map { |l| l['message'] }
+      expect(first_messages & second_messages).to be_empty
     end
 
     it 'returns 500 with error details when backend returns an error' do
       error_backend = instance_double(RailsLogViewer::Backends::Local)
-      allow(error_backend).to receive(:read)
+      allow(error_backend).to receive(:query)
         .and_return({ error: 'Log file not found', path: '/missing.log' })
       allow_any_instance_of(RailsLogViewer::LogsController).to receive(:build_backend)
         .and_return(error_backend)
 
-      get '/log_viewer/logs/local', params: { source: 'local' }
+      get '/log_viewer/query', params: { limit: 10 }
 
       expect(response).to have_http_status(:internal_server_error)
       body = JSON.parse(response.body)

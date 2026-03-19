@@ -6,6 +6,7 @@ module RailsLogViewer
                   :aws_region,
                   :lines_per_page,
                   :redact_patterns,
+                  :redact_defaults,
                   :authenticate_with
 
     def initialize
@@ -15,6 +16,7 @@ module RailsLogViewer
       @aws_region = ENV['AWS_REGION']
       @lines_per_page = 500
       @redact_patterns = []
+      @redact_defaults = true
       @authenticate_with = nil
     end
   end

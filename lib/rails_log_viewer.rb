@@ -1,5 +1,7 @@
 require 'rails_log_viewer/version'
 require 'rails_log_viewer/configuration'
+require 'rails_log_viewer/log_parser'
+require 'rails_log_viewer/redactor'
 require 'rails_log_viewer/engine'
 require 'rails_log_viewer/backends/local'
 require 'rails_log_viewer/backends/cloudwatch'

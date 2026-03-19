@@ -5,44 +5,25 @@ module RailsLogViewer
     def index
       config = RailsLogViewer.configuration
       @source = config.source
-      @sources = [config.source]
       @streams = []
 
       if config.source == :cloudwatch
-        backend = build_cloudwatch_backend
+        backend = build_backend
         stream_names = backend.streams
         @streams = stream_names unless stream_names.is_a?(Hash) && stream_names[:error]
       end
-
-      respond_to do |format|
-        format.html
-        format.json { render json: { sources: @sources, streams: @streams } }
-      end
     end
 
-    def show
-      config = RailsLogViewer.configuration
-      source = (params[:source] || config.source).to_sym
-      page = (params[:page] || 0).to_i
-      query = params[:query]
-      lines_per_page = config.lines_per_page
+    def query
+      backend = build_backend
+      params_hash = query_params
+      result = backend.query(**params_hash)
 
-      backend = build_backend(source)
-      result = fetch_logs(backend, source, page, query, lines_per_page)
-
-      return render json: result, status: :internal_server_error if result[:error]
-
-      has_more = if result[:truncated] != nil
-        result[:truncated]
+      if result[:error]
+        render json: result, status: :internal_server_error
       else
-        result[:has_more] || false
+        render json: result
       end
-
-      render json: {
-        lines: result[:lines],
-        pagination: { page: page, has_more: has_more },
-        source: source
-      }
     end
 
     def stream
@@ -50,22 +31,25 @@ module RailsLogViewer
       response.headers['Cache-Control'] = 'no-cache'
       response.headers['X-Accel-Buffering'] = 'no'
 
-      config = RailsLogViewer.configuration
-      source = (params[:source] || config.source).to_sym
-      backend = build_backend(source)
-      last_line_count = 0
+      backend = build_backend
+      last_cursor = nil
 
       loop do
-        result = fetch_latest(backend, source, config.lines_per_page)
+        params_hash = {
+          start_time: 30.seconds.ago,
+          end_time: Time.now,
+          limit: 50,
+          direction: :newer
+        }
+        params_hash[:cursor] = last_cursor if last_cursor
+        params_hash[:stream] = params[:stream] if params[:stream]
+
+        result = backend.query(**params_hash)
         break if result[:error]
 
-        lines = result[:lines]
-        current_count = lines.length
-
-        if current_count > last_line_count
-          new_lines = lines.last(current_count - last_line_count)
-          response.stream.write("data: #{new_lines.to_json}\n\n")
-          last_line_count = current_count
+        if result[:lines].any?
+          response.stream.write("data: #{result[:lines].to_json}\n\n")
+          last_cursor = result[:cursors][:newer]
         end
 
         sleep 2
@@ -77,60 +61,30 @@ module RailsLogViewer
 
     private
 
-    def build_backend(source)
-      case source
+    def build_backend
+      config = RailsLogViewer.configuration
+      case config.source
       when :cloudwatch
-        build_cloudwatch_backend
+        Backends::Cloudwatch.new(
+          log_group: config.aws_log_group,
+          log_stream_prefix: config.aws_log_stream_prefix,
+          region: config.aws_region
+        )
       else
         Backends::Local.new
       end
     end
 
-    def build_cloudwatch_backend
-      config = RailsLogViewer.configuration
-      Backends::Cloudwatch.new(
-        log_group: config.aws_log_group,
-        log_stream_prefix: config.aws_log_stream_prefix,
-        region: config.aws_region
-      )
-    end
-
-    def fetch_logs(backend, source, page, query, lines_per_page)
-      if query && !query.empty?
-        fetch_search(backend, source, query, lines_per_page)
-      else
-        fetch_read(backend, source, page, lines_per_page)
-      end
-    end
-
-    def fetch_read(backend, source, page, lines_per_page)
-      case source
-      when :cloudwatch
-        stream_name = params[:stream]
-        backend.read(stream_name: stream_name, lines: lines_per_page)
-      else
-        offset = page * lines_per_page
-        backend.read(lines: lines_per_page, offset: offset)
-      end
-    end
-
-    def fetch_search(backend, source, query, lines_per_page)
-      case source
-      when :cloudwatch
-        backend.search(pattern: query)
-      else
-        backend.search(pattern: query, lines: lines_per_page)
-      end
-    end
-
-    def fetch_latest(backend, source, lines_per_page)
-      case source
-      when :cloudwatch
-        stream_name = params[:stream]
-        backend.read(stream_name: stream_name, lines: lines_per_page)
-      else
-        backend.read(lines: lines_per_page)
-      end
+    def query_params
+      h = {}
+      h[:start_time] = Time.parse(params[:start_time]) if params[:start_time].present?
+      h[:end_time] = Time.parse(params[:end_time]) if params[:end_time].present?
+      h[:search] = params[:q] if params[:q].present?
+      h[:severity] = params[:severity].split(',') if params[:severity].present?
+      h[:cursor] = params[:cursor] if params[:cursor].present?
+      h[:direction] = params[:direction]&.to_sym || :older
+      h[:limit] = (params[:limit] || RailsLogViewer.configuration.lines_per_page).to_i
+      h
     end
   end
 end

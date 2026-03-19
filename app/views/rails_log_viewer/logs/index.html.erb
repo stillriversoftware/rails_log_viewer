@@ -1,8 +1,8 @@
 <div id="rlv-app"
      data-source="<%= @source %>"
      data-streams="<%= @streams.to_json %>"
-     data-logs-url="<%= logs_path %>"
-     data-stream-url="<%= logs_stream_path %>">
+     data-query-url="<%= query_path %>"
+     data-stream-url="<%= stream_path %>">
 
   <header id="rlv-header">
     <div id="rlv-header-left">
@@ -12,12 +12,36 @@
     <div id="rlv-header-right">
       <% if @source == :cloudwatch %>
         <select id="rlv-stream-select" aria-label="Log stream">
-          <option value="">Select stream...</option>
+          <option value="">All streams</option>
           <% @streams.each do |stream| %>
             <option value="<%= stream %>"><%= stream %></option>
           <% end %>
         </select>
       <% end %>
+
+      <div id="rlv-time-controls">
+        <select id="rlv-time-range" aria-label="Time range">
+          <option value="15m">Last 15 min</option>
+          <option value="1h" selected>Last 1 hour</option>
+          <option value="6h">Last 6 hours</option>
+          <option value="24h">Last 24 hours</option>
+          <option value="custom">Custom...</option>
+        </select>
+        <div id="rlv-custom-time" hidden>
+          <input type="datetime-local" id="rlv-time-start" aria-label="Start time">
+          <span id="rlv-time-sep">to</span>
+          <input type="datetime-local" id="rlv-time-end" aria-label="End time">
+          <button id="rlv-time-apply" type="button">Apply</button>
+        </div>
+      </div>
+
+      <div id="rlv-severity-controls">
+        <button type="button" class="rlv-sev-btn rlv-sev-active" data-severity="ERROR">ERR</button>
+        <button type="button" class="rlv-sev-btn rlv-sev-active" data-severity="WARN">WRN</button>
+        <button type="button" class="rlv-sev-btn rlv-sev-active" data-severity="INFO">INF</button>
+        <button type="button" class="rlv-sev-btn" data-severity="DEBUG">DBG</button>
+      </div>
+
       <div id="rlv-search-wrap">
         <input type="text"
                id="rlv-search"
@@ -26,6 +50,7 @@
                spellcheck="false"
                aria-label="Search logs">
       </div>
+
       <button id="rlv-live-btn" type="button" aria-pressed="false">Live Tail</button>
       <button id="rlv-copy-btn" type="button">Copy</button>
     </div>
@@ -34,6 +59,7 @@
   <main id="rlv-output-wrap">
     <div id="rlv-output" role="log" aria-live="polite"></div>
     <div id="rlv-status" hidden></div>
+    <button id="rlv-jump-latest" type="button" hidden>New logs available</button>
   </main>
 
   <footer id="rlv-footer">

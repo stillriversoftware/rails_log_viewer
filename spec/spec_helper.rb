@@ -1,9 +1,13 @@
 require 'rails_log_viewer/version'
 require 'rails_log_viewer/configuration'
+require 'rails_log_viewer/log_parser'
+require 'rails_log_viewer/redactor'
 require 'rails_log_viewer/backends/local'
 require 'rails_log_viewer/backends/cloudwatch'
 
 module RailsLogViewer
+  class ConfigurationError < StandardError; end unless const_defined?(:ConfigurationError)
+
   class << self
     def configuration
       @configuration ||= Configuration.new

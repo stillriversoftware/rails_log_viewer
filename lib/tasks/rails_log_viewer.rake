@@ -9,7 +9,9 @@ namespace :rails_log_viewer do
 
     puts "Source:           #{config.source}"
     puts "Lines per page:   #{config.lines_per_page}"
-    puts "Redact patterns:  #{config.redact_patterns.length} pattern(s)"
+    puts "Redact defaults:  #{config.redact_defaults ? 'enabled (' + RailsLogViewer::Redactor::DEFAULT_PATTERNS.length.to_s + ' built-in patterns)' : 'disabled'}"
+    puts "Redact custom:    #{config.redact_patterns.length} pattern(s)"
+    puts "Redact total:     #{RailsLogViewer::Redactor.patterns.length} active pattern(s)"
 
     if config.authenticate_with.nil?
       errors << 'authenticate_with is not configured (required)'
