@@ -1,6 +1,7 @@
 <div id="rlv-app"
      data-source="<%= @source %>"
      data-streams="<%= @streams.to_json %>"
+     data-files="<%= @files.to_json %>"
      data-query-url="<%= query_path %>"
      data-stream-url="<%= stream_path %>">
 
@@ -15,6 +16,14 @@
           <option value="">All streams</option>
           <% @streams.each do |stream| %>
             <option value="<%= stream %>"><%= stream %></option>
+          <% end %>
+        </select>
+      <% end %>
+      <% if @source == :s3 %>
+        <select id="rlv-file-select" aria-label="Log file">
+          <option value="">Select log file...</option>
+          <% @files.each do |file| %>
+            <option value="<%= file[:key] %>"><%= file[:name] %></option>
           <% end %>
         </select>
       <% end %>

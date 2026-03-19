@@ -7,7 +7,7 @@ module RailsLogViewer
         }
       end
 
-      def query(start_time: nil, end_time: nil, search: nil, severity: nil, cursor: nil, direction: :older, limit: 100)
+      def query(start_time: nil, end_time: nil, search: nil, severity: nil, cursor: nil, direction: :older, limit: 100, **)
         return file_error unless readable?
 
         search_re = build_search_regex(search)

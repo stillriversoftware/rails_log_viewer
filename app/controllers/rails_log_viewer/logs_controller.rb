@@ -6,11 +6,16 @@ module RailsLogViewer
       config = RailsLogViewer.configuration
       @source = config.source
       @streams = []
+      @files = []
 
       if config.source == :cloudwatch
         backend = build_backend
         stream_names = backend.streams
         @streams = stream_names unless stream_names.is_a?(Hash) && stream_names[:error]
+      elsif config.source == :s3
+        backend = build_backend
+        file_list = backend.files
+        @files = file_list unless file_list.is_a?(Hash) && file_list[:error]
       end
     end
 
@@ -70,6 +75,12 @@ module RailsLogViewer
           log_stream_prefix: config.aws_log_stream_prefix,
           region: config.aws_region
         )
+      when :s3
+        Backends::S3.new(
+          bucket: config.s3_bucket,
+          prefix: config.s3_prefix,
+          region: config.s3_region
+        )
       else
         Backends::Local.new
       end
@@ -84,6 +95,7 @@ module RailsLogViewer
       h[:cursor] = params[:cursor] if params[:cursor].present?
       h[:direction] = params[:direction]&.to_sym || :older
       h[:limit] = (params[:limit] || RailsLogViewer.configuration.lines_per_page).to_i
+      h[:file_key] = params[:file_key] if params[:file_key].present?
       h
     end
   end

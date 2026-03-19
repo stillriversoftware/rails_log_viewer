@@ -28,6 +28,15 @@ namespace :rails_log_viewer do
       errors << 'aws_region is required for CloudWatch source' if config.aws_region.nil?
     end
 
+    if config.source == :s3
+      puts "S3 bucket:        #{config.s3_bucket || '(not set)'}"
+      puts "S3 prefix:        #{config.s3_prefix.empty? ? '(none)' : config.s3_prefix}"
+      puts "S3 region:        #{config.s3_region || '(not set)'}"
+
+      errors << 's3_bucket is required for S3 source' if config.s3_bucket.nil?
+      errors << 's3_region is required for S3 source' if config.s3_region.nil?
+    end
+
     puts '=' * 40
 
     if errors.any?

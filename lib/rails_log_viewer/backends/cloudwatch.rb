@@ -30,7 +30,7 @@ module RailsLogViewer
         credentials_error
       end
 
-      def query(start_time: nil, end_time: nil, search: nil, severity: nil, cursor: nil, direction: :older, limit: 100)
+      def query(start_time: nil, end_time: nil, search: nil, severity: nil, cursor: nil, direction: :older, limit: 100, **)
         effective_start = start_time || (Time.now - 3600)
         effective_end = end_time || Time.now
         effective_start, effective_end = resolve_time_range(effective_start, effective_end, cursor, direction)

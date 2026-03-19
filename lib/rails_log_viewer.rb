@@ -5,6 +5,7 @@ require 'rails_log_viewer/redactor'
 require 'rails_log_viewer/engine'
 require 'rails_log_viewer/backends/local'
 require 'rails_log_viewer/backends/cloudwatch'
+require 'rails_log_viewer/backends/s3'
 
 module RailsLogViewer
   class ConfigurationError < StandardError; end

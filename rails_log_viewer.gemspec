@@ -24,6 +24,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   spec.add_dependency 'aws-sdk-cloudwatchlogs', '~> 1.0'
+  spec.add_dependency 'aws-sdk-s3', '~> 1.0'
   spec.add_dependency 'railties', '>= 6.0'
 
   spec.add_development_dependency 'rspec', '~> 3.0'

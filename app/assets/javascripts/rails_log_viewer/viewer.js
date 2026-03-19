@@ -21,6 +21,7 @@
   var timeEnd = document.getElementById('rlv-time-end');
   var timeApply = document.getElementById('rlv-time-apply');
   var streamSelect = document.getElementById('rlv-stream-select');
+  var fileSelect = document.getElementById('rlv-file-select');
   var sevButtons = document.querySelectorAll('.rlv-sev-btn');
 
   var cursorOlder = null;
@@ -49,6 +50,13 @@
       streamSelect.addEventListener('change', function() {
         if (eventSource) stopLive();
         fetchLogs();
+      });
+    }
+
+    if (fileSelect) {
+      fileSelect.addEventListener('change', function() {
+        if (eventSource) stopLive();
+        if (fileSelect.value) fetchLogs();
       });
     }
   }
@@ -139,6 +147,10 @@
 
     if (source === 'cloudwatch' && streamSelect && streamSelect.value) {
       params.push('stream=' + encodeURIComponent(streamSelect.value));
+    }
+
+    if (source === 's3' && fileSelect && fileSelect.value) {
+      params.push('file_key=' + encodeURIComponent(fileSelect.value));
     }
 
     var url = queryUrl + '?' + params.join('&');
