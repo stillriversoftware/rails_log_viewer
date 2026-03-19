@@ -1,0 +1,42 @@
+<div id="rlv-app"
+     data-source="<%= @source %>"
+     data-streams="<%= @streams.to_json %>"
+     data-logs-url="<%= logs_path %>"
+     data-stream-url="<%= logs_stream_path %>">
+
+  <header id="rlv-header">
+    <div id="rlv-header-left">
+      <h1 id="rlv-title">Log Viewer</h1>
+      <span id="rlv-source-badge"><%= @source.to_s.capitalize %></span>
+    </div>
+    <div id="rlv-header-right">
+      <% if @source == :cloudwatch %>
+        <select id="rlv-stream-select" aria-label="Log stream">
+          <option value="">Select stream...</option>
+          <% @streams.each do |stream| %>
+            <option value="<%= stream %>"><%= stream %></option>
+          <% end %>
+        </select>
+      <% end %>
+      <div id="rlv-search-wrap">
+        <input type="text"
+               id="rlv-search"
+               placeholder="Search logs..."
+               autocomplete="off"
+               spellcheck="false"
+               aria-label="Search logs">
+      </div>
+      <button id="rlv-live-btn" type="button" aria-pressed="false">Live Tail</button>
+      <button id="rlv-copy-btn" type="button">Copy</button>
+    </div>
+  </header>
+
+  <main id="rlv-output-wrap">
+    <div id="rlv-output" role="log" aria-live="polite"></div>
+    <div id="rlv-status" hidden></div>
+  </main>
+
+  <footer id="rlv-footer">
+    <button id="rlv-older-btn" type="button" hidden>Load older logs</button>
+  </footer>
+</div>

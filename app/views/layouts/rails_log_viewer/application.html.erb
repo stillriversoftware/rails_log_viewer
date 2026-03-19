@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rails Log Viewer</title>
+  <%= csrf_meta_tags %>
+  <style><%= raw RailsLogViewer::Engine.root.join('app', 'assets', 'stylesheets', 'rails_log_viewer', 'application.css').read %></style>
+</head>
+<body>
+  <%= yield %>
+  <script><%= raw RailsLogViewer::Engine.root.join('app', 'assets', 'javascripts', 'rails_log_viewer', 'viewer.js').read %></script>
+</body>
+</html>

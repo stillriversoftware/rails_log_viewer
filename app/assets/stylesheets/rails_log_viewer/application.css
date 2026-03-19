@@ -1,0 +1,248 @@
+/* Rails Log Viewer — scoped under #rlv-app */
+
+#rlv-app {
+  --rlv-bg: #0d1117;
+  --rlv-surface: #161b22;
+  --rlv-border: #30363d;
+  --rlv-text: #c9d1d9;
+  --rlv-text-muted: #6e7681;
+  --rlv-accent: #58a6ff;
+  --rlv-red: #f85149;
+  --rlv-yellow: #d29922;
+  --rlv-green: #3fb950;
+  --rlv-font: 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
+
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--rlv-bg);
+  color: var(--rlv-text);
+  font-family: var(--rlv-font);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+}
+
+/* Header */
+
+#rlv-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--rlv-surface);
+  border-bottom: 1px solid var(--rlv-border);
+  flex-shrink: 0;
+}
+
+#rlv-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+#rlv-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+#rlv-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+  color: var(--rlv-text);
+  letter-spacing: -0.01em;
+}
+
+#rlv-source-badge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(88, 166, 255, 0.15);
+  color: var(--rlv-accent);
+  white-space: nowrap;
+}
+
+/* Controls */
+
+#rlv-search-wrap {
+  flex: 1;
+  max-width: 360px;
+}
+
+#rlv-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  background: var(--rlv-bg);
+  border: 1px solid var(--rlv-border);
+  border-radius: 6px;
+  color: var(--rlv-text);
+  font-family: var(--rlv-font);
+  font-size: 13px;
+  outline: none;
+}
+
+#rlv-search:focus {
+  border-color: var(--rlv-accent);
+  box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2);
+}
+
+#rlv-search::placeholder {
+  color: var(--rlv-text-muted);
+}
+
+#rlv-stream-select {
+  padding: 6px 10px;
+  background: var(--rlv-bg);
+  border: 1px solid var(--rlv-border);
+  border-radius: 6px;
+  color: var(--rlv-text);
+  font-family: var(--rlv-font);
+  font-size: 13px;
+  max-width: 220px;
+  outline: none;
+}
+
+#rlv-stream-select:focus {
+  border-color: var(--rlv-accent);
+}
+
+#rlv-live-btn,
+#rlv-copy-btn,
+#rlv-older-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--rlv-border);
+  border-radius: 6px;
+  background: var(--rlv-surface);
+  color: var(--rlv-text);
+  font-family: var(--rlv-font);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+#rlv-live-btn:hover,
+#rlv-copy-btn:hover,
+#rlv-older-btn:hover {
+  background: var(--rlv-border);
+}
+
+#rlv-live-btn[aria-pressed="true"] {
+  background: rgba(63, 185, 80, 0.15);
+  border-color: var(--rlv-green);
+  color: var(--rlv-green);
+}
+
+/* Log output */
+
+#rlv-output-wrap {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#rlv-output {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+#rlv-output::-webkit-scrollbar {
+  width: 8px;
+}
+
+#rlv-output::-webkit-scrollbar-track {
+  background: var(--rlv-bg);
+}
+
+#rlv-output::-webkit-scrollbar-thumb {
+  background: var(--rlv-border);
+  border-radius: 4px;
+}
+
+.rlv-line {
+  padding: 1px 16px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.rlv-line:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.rlv-line-num {
+  display: inline-block;
+  width: 50px;
+  color: var(--rlv-text-muted);
+  text-align: right;
+  margin-right: 12px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Severity colors */
+
+.rlv-line--error {
+  color: var(--rlv-red);
+}
+
+.rlv-line--warn {
+  color: var(--rlv-yellow);
+}
+
+.rlv-line--info {
+  color: var(--rlv-text);
+}
+
+.rlv-line--debug {
+  color: var(--rlv-text-muted);
+}
+
+.rlv-line--redacted {
+  color: var(--rlv-text-muted);
+  font-style: italic;
+}
+
+/* Status */
+
+#rlv-status {
+  text-align: center;
+  padding: 8px 16px;
+  color: var(--rlv-text-muted);
+  font-size: 12px;
+}
+
+/* Footer */
+
+#rlv-footer {
+  display: flex;
+  justify-content: center;
+  padding: 8px 16px;
+  background: var(--rlv-surface);
+  border-top: 1px solid var(--rlv-border);
+  flex-shrink: 0;
+}
+
+#rlv-older-btn {
+  padding: 8px 24px;
+}
+
+/* Timestamp for CloudWatch lines */
+
+.rlv-timestamp {
+  color: var(--rlv-text-muted);
+  margin-right: 8px;
+}
