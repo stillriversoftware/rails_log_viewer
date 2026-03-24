@@ -28,5 +28,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'railties', '>= 6.0'
 
   spec.add_development_dependency 'rspec', '~> 3.0'
-  spec.add_development_dependency 'rspec-rails', '~> 7.0'
+  spec.add_development_dependency 'rspec-rails', '~> 8.0'
 end
